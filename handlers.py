@@ -3,7 +3,8 @@ from aiogram.types import Message
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
-
+from hh import search_vacancies, get_vacancy
+from scorer import calculate_score
 from database import (
     get_or_create_user,
     update_user_skills,
@@ -144,3 +145,47 @@ async def edit_skills_handler(message: Message,state: FSMContext):
         "Например:\n"
         "Python, FastAPI, PostgreSQL, Docker"
     )
+
+@handler_router.message(Command("search"))
+async def search_handler(message: Message):
+    # Получаем навыки пользователя
+    skills = await get_user_skills(
+        message.from_user.id
+    )
+
+    if not skills:
+        await message.answer(
+            "Сначала добавь свои навыки через /start"
+        )
+        return
+
+    # Пока просто соединяем навыки в одну строку
+    search_text = " ".join(skills)
+
+    # Получаем вакансии
+    vacancies = await search_vacancies(search_text)
+
+    if not vacancies:
+        await message.answer(
+            "Вакансии не найдены."
+        )
+        return
+
+    text = "🔎 Найденные вакансии:\n\n"
+
+    for vacancy in vacancies:
+        score, matched, missing = calculate_score(
+        skills,
+        vacancy["key_skills"]
+    )
+
+    text += (
+        f"💼 {vacancy['name']}\n"
+        f"🏢 {vacancy['employer']['name']}\n"
+        f"🎯 Совпадение: {score}%\n"
+        f"✅ Совпало: {', '.join(matched)}\n"
+        f"❌ Не хватает: {', '.join(missing)}\n"
+        f"🔗 {vacancy['alternate_url']}\n\n"
+    )
+
+    await message.answer(text)
