@@ -6,9 +6,9 @@ from aiogram import Bot, Dispatcher
 from handlers import handler_router
 from database import initialize_database
 
+
 logging.basicConfig(level=logging.INFO)
 load_dotenv()
-open_api= getenv("OPEN_API")
 bot = Bot(token=getenv("TG_API"))
 dispatcher = Dispatcher()
 
